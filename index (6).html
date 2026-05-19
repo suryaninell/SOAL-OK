@@ -1,0 +1,1469 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Soal Builder Pro</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        
+        /* Area Cetak A4 */
+        #print-area {
+            max-width: 210mm;
+            min-height: 297mm;
+            background: white;
+            margin: 2rem auto;
+            padding: 2.5cm;
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            border-radius: 0.5rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* Gaya Konten HTML AI */
+        #content-body {
+            font-size: 11pt;
+            line-height: 1.6;
+        }
+        #content-body h1, #content-body h2, #content-body h3 {
+            font-weight: 700;
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+            color: #0f172a;
+        }
+        #content-body h2 { font-size: 1.5rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem; }
+        #content-body h3 { font-size: 1.25rem; }
+        #content-body p { margin-bottom: 1rem; color: #334155; text-align: justify; }
+        #content-body ul, #content-body ol { margin-left: 2rem; margin-bottom: 1.25rem; color: #334155; }
+        #content-body li { margin-bottom: 0.5rem; }
+        #content-body ul { list-style-type: disc; }
+        #content-body ol { list-style-type: decimal; }
+        #content-body strong, #content-body b { font-weight: 600; color: #1e293b; }
+        
+        /* Gaya Tabel HTML AI */
+        #content-body table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1.5rem;
+            margin-bottom: 2rem;
+            background-color: #ffffff;
+        }
+        #content-body th, #content-body td {
+            border: 1px solid #cbd5e1;
+            padding: 0.75rem;
+            text-align: left;
+            vertical-align: top;
+        }
+        #content-body th { 
+            background-color: #f1f5f9; 
+            font-weight: 600; 
+            color: #1e293b;
+        }
+
+        /* Animasi Loading */
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            border-top: 4px solid #ffffff;
+            width: 48px;
+            height: 48px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Animasi Getar */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased relative min-h-screen pb-12">
+
+    <!-- Login Overlay (Password & Request Access System) -->
+    <div id="login-overlay" class="fixed inset-0 z-[100] bg-slate-900 flex items-center justify-center backdrop-blur-md transition-opacity duration-500">
+        <div id="login-card" class="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4 transform transition-all">
+            <!-- Header Kunci -->
+            <div class="text-center mb-6">
+                <div class="w-14 h-14 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-inner">
+                    <i class="fas fa-shield-alt text-2xl"></i>
+                </div>
+                <h2 class="text-2xl font-extrabold text-slate-800">Akses Terbatas</h2>
+                <p class="text-slate-500 text-xs mt-1">Dikelola oleh <span class="font-semibold text-slate-700">Ahmad Fauzi</span></p>
+            </div>
+
+            <!-- Tab Selector -->
+            <div class="flex border-b border-slate-200 mb-6 text-sm">
+                <button onclick="switchLoginTab('sandi')" id="tab-sandi" class="flex-1 pb-3 text-center border-b-2 border-blue-600 font-bold text-blue-600 focus:outline-none transition-all">
+                    Kata Sandi
+                </button>
+                <button onclick="switchLoginTab('minta')" id="tab-minta" class="flex-1 pb-3 text-center border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-medium focus:outline-none transition-all">
+                    Minta Izin
+                </button>
+                <button onclick="switchLoginTab('cek')" id="tab-cek" class="flex-1 pb-3 text-center border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-medium focus:outline-none transition-all">
+                    Cek Email
+                </button>
+            </div>
+            
+            <!-- FORM 1: MASUK DENGAN SANDI -->
+            <div id="form-sandi" class="space-y-4">
+                <p class="text-slate-500 text-xs text-center leading-relaxed">Masukkan kata sandi instrumen untuk membuka penuh akses aplikasi.</p>
+                <div>
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                            <i class="fas fa-key"></i>
+                        </div>
+                        <input type="password" id="app-password" class="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 bg-slate-50 outline-none transition-all text-slate-700 font-medium tracking-wider text-sm" placeholder="Masukkan kata sandi...">
+                    </div>
+                    <p id="login-error" class="text-red-500 text-xs mt-2 hidden font-medium flex items-center gap-1"><i class="fas fa-exclamation-circle"></i> Sandi salah atau tidak terdaftar.</p>
+                </div>
+                <button id="btn-login" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md flex justify-center items-center gap-2 text-sm">
+                    Buka Aplikasi <i class="fas fa-unlock text-xs"></i>
+                </button>
+            </div>
+
+            <!-- FORM 2: REQUEST ACCESS (Gaya Google Drive dengan Pengiriman Email Asli) -->
+            <div id="form-minta" class="space-y-4 hidden">
+                <p class="text-slate-500 text-xs leading-relaxed text-center">Tidak punya sandi? Kirim permintaan izin akses langsung ke email pemilik sistem.</p>
+                <div class="space-y-3">
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                            <i class="fas fa-user text-xs"></i>
+                        </div>
+                        <input type="text" id="req-nama" class="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 bg-slate-50 outline-none transition-all text-xs" placeholder="Nama Lengkap Anda">
+                    </div>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                            <i class="fas fa-envelope text-xs"></i>
+                        </div>
+                        <input type="email" id="req-email" class="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 bg-slate-50 outline-none transition-all text-xs" placeholder="Email Anda">
+                    </div>
+                    <div class="relative">
+                        <textarea id="req-alasan" rows="2" class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 bg-slate-50 outline-none transition-all text-xs resize-none" placeholder="Alasan akses / Pesan untuk admin (opsional)"></textarea>
+                    </div>
+                </div>
+                <button onclick="submitAccessRequest()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md flex justify-center items-center gap-2 text-sm">
+                    Kirim ke Email Admin <i class="fas fa-envelope-open-text text-xs"></i>
+                </button>
+            </div>
+
+            <!-- FORM 3: PERIKSA STATUS EMAIL -->
+            <div id="form-cek" class="space-y-4 hidden">
+                <p class="text-slate-500 text-xs leading-relaxed text-center">Jika admin telah menyetujui permintaan Anda, masukkan email Anda untuk masuk langsung.</p>
+                <div>
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <input type="email" id="cek-email" class="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 bg-slate-50 outline-none transition-all text-slate-700 font-medium text-sm" placeholder="Masukkan email terdaftar...">
+                    </div>
+                    <p id="cek-error" class="text-red-500 text-xs mt-2 hidden font-medium flex items-center gap-1"><i class="fas fa-exclamation-circle"></i> Email belum disetujui atau salah.</p>
+                </div>
+                <button onclick="checkEmailPermission()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md flex justify-center items-center gap-2 text-sm">
+                    Periksa & Masuk <i class="fas fa-sign-in-alt text-xs"></i>
+                </button>
+            </div>
+
+            <!-- Footer WhatsApp Info -->
+            <div class="mt-6 text-center border-t border-slate-100 pt-4">
+                <p class="text-xs text-slate-400 font-medium"><i class="fab fa-whatsapp text-green-500 mr-1"></i> Admin WA: 082284424448</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- API & System Modal -->
+    <div id="api-modal" class="fixed inset-0 bg-slate-900/60 z-[90] flex items-center justify-center hidden backdrop-blur-sm transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4 transform transition-all scale-95 opacity-0 duration-300" id="api-modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2"><i class="fas fa-cog text-slate-500"></i> Pengaturan Sistem</h3>
+                <button onclick="closeApiModal()" class="text-slate-400 hover:text-slate-600 focus:outline-none">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4 mb-6">
+                <!-- API KEY Input -->
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Gemini API Key</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <i class="fas fa-key"></i>
+                        </div>
+                        <input type="password" id="api-key-input" class="w-full pl-10 pr-10 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50 focus:bg-white outline-none transition-all text-sm" placeholder="Masukkan API Key Gemini Anda...">
+                        <button type="button" onclick="togglePasswordVisibility('api-key-input', 'toggle-api-icon')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
+                            <i class="fas fa-eye" id="toggle-api-icon"></i>
+                        </button>
+                    </div>
+                    <p class="text-[10px] text-slate-500 mt-1">
+                        Dapatkan di <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-blue-600 hover:underline font-medium">Google AI Studio</a>. Hanya disimpan lokal di browser Anda.
+                    </p>
+                </div>
+
+                <!-- Admin Email Configuration -->
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Email Admin (Tujuan Notifikasi Izin)</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <input type="email" id="admin-email-input" class="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50 focus:bg-white outline-none transition-all text-sm" placeholder="Contoh: ahmadfauzi@email.com">
+                    </div>
+                    <p class="text-[10px] text-slate-500 mt-1">
+                        Pesan pengajuan izin akses dari pengguna lain akan diarahkan langsung ke alamat email ini.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="flex justify-end gap-3">
+                <button onclick="closeApiModal()" class="px-4 py-2 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">Batal</button>
+                <button onclick="saveSettings()" class="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-sm">Simpan Pengaturan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL FALLBACK AKSES (Saat mailto gagal dipicu peramban) -->
+    <div id="request-modal" class="fixed inset-0 bg-slate-900/60 z-[115] flex items-center justify-center hidden backdrop-blur-sm transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4 transform transition-all scale-95 opacity-0 duration-300 flex flex-col" id="request-modal-content">
+            <div class="flex justify-between items-center mb-4 border-b pb-3">
+                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fas fa-paper-plane text-blue-600"></i> Pengiriman Permintaan
+                </h3>
+                <button onclick="closeRequestModal()" class="text-slate-400 hover:text-slate-600 focus:outline-none">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <p class="text-xs text-slate-600 mb-4 leading-relaxed">
+                Sistem mencoba memicu klien email Anda. Jika aplikasi email tidak terbuka otomatis, silakan gunakan opsi alternatif di bawah untuk mengirim data pengajuan langsung ke Admin:
+            </p>
+            
+            <textarea id="copy-request-text" readonly rows="6" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-xs font-mono text-slate-500 mb-4 outline-none focus:ring-1 focus:ring-blue-500 resize-none"></textarea>
+            
+            <div class="space-y-2">
+                <button onclick="copyRequestText()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-4 rounded-xl transition-all text-xs flex justify-center items-center gap-2">
+                    <i class="fas fa-copy"></i> Salin Teks Permintaan
+                </button>
+                <div class="flex gap-2">
+                    <button onclick="sendRequestViaWA()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl transition-all text-xs flex justify-center items-center gap-2">
+                        <i class="fab fa-whatsapp"></i> Kirim via WA Admin
+                    </button>
+                    <button onclick="closeRequestModal()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl transition-all text-xs flex justify-center items-center gap-2">
+                        Lanjut Cek Status
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADMIN PERSATUAN PANEL MODAL (Hanya Tampil untuk Pendesain Ahmad Fauzi) -->
+    <div id="admin-panel-modal" class="fixed inset-0 bg-slate-900/60 z-[95] flex items-center justify-center hidden backdrop-blur-sm transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-2xl w-full mx-4 transform transition-all scale-95 opacity-0 duration-300 flex flex-col max-h-[85vh]" id="admin-panel-content">
+            <div class="flex justify-between items-center mb-4 border-b pb-3">
+                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fas fa-users-cog text-blue-600"></i> Panel Persetujuan Admin (Ahmad Fauzi)
+                </h3>
+                <button onclick="closeAdminPanel()" class="text-slate-400 hover:text-slate-600 focus:outline-none">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Daftar Permintaan Akses -->
+            <div class="flex-1 overflow-y-auto space-y-4 pr-1 my-2" id="admin-req-list">
+                <!-- Data dinamis disuntik di sini -->
+                <p class="text-slate-400 text-center py-8 text-sm">Tidak ada permintaan masuk saat ini.</p>
+            </div>
+            
+            <div class="flex justify-between items-center border-t pt-4 mt-2">
+                <button onclick="clearAllRequests()" class="text-red-500 hover:text-red-700 font-semibold text-xs flex items-center gap-1">
+                    <i class="fas fa-trash-alt"></i> Bersihkan Semua Riwayat
+                </button>
+                <button onclick="closeAdminPanel()" class="px-5 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">Tutup Panel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FLOATING ADMIN BADGE (Hanya Tampil Jika Mode Designer Aktif) -->
+    <div id="admin-badge" class="fixed bottom-6 left-6 z-40 hidden">
+        <button onclick="openAdminPanel()" class="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-5 py-3 shadow-xl hover:shadow-2xl font-bold text-sm flex items-center gap-2 transition-all duration-300 relative group animate-bounce">
+            <i class="fas fa-user-shield text-base"></i>
+            <span>Panel Persetujuan</span>
+            <!-- Red Notification Dot -->
+            <span id="req-count-badge" class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-black border-2 border-white hidden">0</span>
+        </button>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-slate-900/80 z-[80] flex flex-col items-center justify-center hidden backdrop-blur-sm transition-opacity duration-300">
+        <div class="spinner mb-6 shadow-lg"></div>
+        <div class="bg-white/10 px-6 py-3 rounded-full backdrop-blur-md border border-white/20">
+            <p id="loading-text" class="text-white text-lg font-medium tracking-wide">AI sedang memproses...</p>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 z-[110] text-white px-5 py-4 rounded-xl shadow-2xl hidden transform transition-all duration-300 translate-y-full opacity-0 flex items-center gap-3 max-w-md w-full sm:w-auto">
+        <span id="toast-icon" class="flex-shrink-0 text-xl"></span>
+        <p id="toast-message" class="font-medium text-sm leading-tight">Pesan di sini</p>
+        <button onclick="closeToast()" class="ml-auto text-white/70 hover:text-white focus:outline-none">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="confirm-modal" class="fixed inset-0 bg-slate-900/60 z-[85] flex items-center justify-center hidden backdrop-blur-sm transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4 transform transition-all scale-95 opacity-0 duration-300" id="confirm-modal-content">
+            <div class="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-4 mx-auto">
+                <i class="fas fa-exclamation-triangle text-xl"></i>
+            </div>
+            <h3 class="text-xl font-bold text-slate-800 mb-2 text-center">Konfirmasi Hapus</h3>
+            <p class="text-slate-600 mb-6 text-sm text-center leading-relaxed">Apakah Anda yakin ingin membersihkan semua hasil dari preview? Tindakan ini tidak dapat dibatalkan.</p>
+            <div class="flex justify-center gap-3 w-full">
+                <button id="btn-cancel-clear" class="flex-1 px-4 py-2.5 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">Batal</button>
+                <button id="btn-confirm-clear" class="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors shadow-sm shadow-red-200">Ya, Bersihkan</button>
+            </div>
+        </div>
+    </div>
+
+    <header class="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-30">
+        <div class="max-w-6xl mx-auto px-4 md:px-8 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-extrabold text-slate-800 flex items-center gap-3">
+                    <div class="bg-blue-600 text-white w-10 h-10 rounded-lg flex items-center justify-center shadow-md shadow-blue-200">
+                        <i class="fas fa-robot text-xl"></i>
+                    </div>
+                    AI Soal Builder <span class="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent text-sm font-bold align-top mt-1 ml-1">PRO</span>
+                </h1>
+                <p class="text-slate-500 mt-1 text-sm md:text-base ml-13 font-medium">Generator instrumen asesmen AKM otomatis</p>
+            </div>
+            
+            <div class="flex items-center gap-3 flex-wrap">
+                <div class="hidden sm:block text-right border-r border-slate-200 pr-3">
+                    <p class="text-xs text-slate-500 font-medium mb-0.5">Pengembang</p>
+                    <p class="text-sm font-bold text-slate-800">Ahmad Fauzi</p>
+                </div>
+                <button onclick="openApiModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2 px-3 rounded-lg transition-colors items-center gap-2 text-sm shadow-sm flex" title="Pengaturan API & Sistem">
+                    <i class="fas fa-cog" id="api-status-icon"></i> <span class="hidden sm:inline">Pengaturan</span>
+                </button>
+                 <button id="btn-export-header" class="bg-slate-800 hover:bg-slate-900 text-white font-medium py-2 px-4 rounded-lg transition-colors items-center gap-2 text-sm shadow-sm opacity-50 cursor-not-allowed flex" disabled>
+                    <i class="fas fa-file-word"></i> Ekspor .doc
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 md:px-8 mt-8">
+        <section class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 mb-8 relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-2 h-full bg-blue-500"></div>
+            
+            <div class="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
+                <div class="bg-blue-50 text-blue-600 w-8 h-8 rounded-full flex items-center justify-center">
+                    <i class="fas fa-sliders-h"></i>
+                </div>
+                <h2 class="text-xl font-bold text-slate-800">Konfigurasi Parameter Soal</h2>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                <!-- Mata Pelajaran -->
+                <div class="md:col-span-1 group">
+                    <label class="block text-sm font-semibold text-slate-700 mb-2 group-focus-within:text-blue-600 transition-colors">Mata Pelajaran</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <i class="fas fa-book"></i>
+                        </div>
+                        <input type="text" id="mata-pelajaran" class="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50 focus:bg-white outline-none transition-all" placeholder="Contoh: Matematika, IPA, Sejarah">
+                    </div>
+                </div>
+
+                <!-- Fase / Kelas -->
+                <div class="md:col-span-1 group">
+                    <label class="block text-sm font-semibold text-slate-700 mb-2 group-focus-within:text-blue-600 transition-colors">Fase / Kelas</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <i class="fas fa-layer-group"></i>
+                        </div>
+                        <select id="fase-kelas" class="w-full pl-10 pr-10 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50 focus:bg-white outline-none appearance-none transition-all cursor-pointer">
+                            <option value="D / VII">Fase D / Kelas VII (SMP)</option>
+                            <option value="D / VIII">Fase D / Kelas VIII (SMP)</option>
+                            <option value="D / IX">Fase D / Kelas IX (SMP)</option>
+                            <option value="E / X">Fase E / Kelas X (SMA/SMK)</option>
+                            <option value="F / XI">Fase F / Kelas XI (SMA/SMK)</option>
+                            <option value="F / XII">Fase F / Kelas XII (SMA/SMK)</option>
+                        </select>
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-500">
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Topik Utama -->
+                <div class="md:col-span-2 group">
+                    <label class="block text-sm font-semibold text-slate-700 mb-2 group-focus-within:text-blue-600 transition-colors">Topik Utama / Materi Pokok</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <i class="fas fa-heading"></i>
+                        </div>
+                        <input type="text" id="topik-utama" class="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50 focus:bg-white outline-none transition-all" placeholder="Contoh: Sistem Pencernaan Manusia">
+                    </div>
+                </div>
+
+                <!-- Sub Materi -->
+                <div class="md:col-span-2 group">
+                    <label class="block text-sm font-semibold text-slate-700 mb-2 group-focus-within:text-blue-600 transition-colors">Sub Materi / Konteks Spesifik</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <i class="fas fa-align-left"></i>
+                        </div>
+                        <input type="text" id="sub-materi" class="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50 focus:bg-white outline-none transition-all" placeholder="Contoh: Proses pencernaan kimiawi di lambung dan usus halus dalam kehidupan sehari-hari">
+                    </div>
+                </div>
+
+                <!-- Referensi PDF -->
+                <div class="md:col-span-2 group">
+                    <label class="block text-sm font-semibold text-slate-700 mb-2 group-focus-within:text-blue-600 transition-colors">Referensi Materi (Opsional, PDF)</label>
+                    <div class="relative flex items-center">
+                        <input type="file" id="file-referensi" accept=".pdf" class="hidden" onchange="updateFileName(this)">
+                        <label for="file-referensi" class="w-full flex items-center justify-between px-4 py-3 border border-slate-300 rounded-xl hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition-all bg-slate-50">
+                            <div class="flex items-center gap-3 overflow-hidden">
+                                <i class="fas fa-file-pdf text-red-500 text-lg"></i>
+                                <span id="file-name" class="text-slate-500 text-sm truncate">Unggah file referensi materi (Maks. 5MB)</span>
+                            </div>
+                            <div class="bg-blue-100 text-blue-700 px-4 py-1.5 rounded-lg text-xs font-bold tracking-wide flex-shrink-0">Pilih File...</div>
+                        </label>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-1 ml-1"><i class="fas fa-info-circle"></i> Jika diunggah, AI akan menjadikan dokumen ini acuan utama penyusunan soal.</p>
+                </div>
+
+                <!-- Tingkat Kesulitan -->
+                <div class="md:col-span-1 group">
+                    <label class="block text-sm font-semibold text-slate-700 mb-2 group-focus-within:text-blue-600 transition-colors">Tingkat Kesulitan Kognitif</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <select id="tingkat-kesulitan" class="w-full pl-10 pr-10 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50 focus:bg-white outline-none appearance-none transition-all cursor-pointer">
+                            <option value="C3 - Penerapan (Sedang)">C3 - Penerapan (Sedang)</option>
+                            <option value="C4 - Analisis (HOTS)" selected>C4 - Analisis (HOTS)</option>
+                            <option value="C5 - Evaluasi (HOTS Tinggi)">C5 - Evaluasi (HOTS Tinggi)</option>
+                            <option value="C6 - Kreasi (Sangat Sulit)">C6 - Kreasi (Sangat Sulit)</option>
+                        </select>
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-500">
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Jumlah Gambar -->
+                <div class="md:col-span-1 group">
+                    <label class="block text-sm font-semibold text-slate-700 mb-2 group-focus-within:text-blue-600 transition-colors">Target Jumlah Stimulus Gambar/Grafik</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <i class="fas fa-image"></i>
+                        </div>
+                        <input type="number" id="jml-gambar" min="0" max="5" value="1" class="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50 focus:bg-white outline-none transition-all" placeholder="0">
+                    </div>
+                </div>
+
+                <!-- Komposisi Soal -->
+                <div class="md:col-span-2 mt-2">
+                    <div class="bg-slate-50 border border-slate-200 rounded-2xl overflow-hidden">
+                        <div class="bg-slate-100/80 px-5 py-3 border-b border-slate-200 flex items-center gap-2">
+                            <i class="fas fa-list-ol text-slate-500"></i>
+                            <h3 class="text-sm font-bold text-slate-700">Komposisi Jumlah Soal per Tahap (Klik Tombol di Bawah)</h3>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-0 divide-x divide-y sm:divide-y-0 divide-slate-200">
+                            <div class="p-4 hover:bg-white transition-colors text-center">
+                                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Pilihan Ganda</label>
+                                <input type="number" id="jml-pg" min="1" max="10" value="3" class="w-16 text-center font-bold text-lg px-2 py-1 bg-transparent border-b-2 border-slate-300 focus:border-blue-500 outline-none transition-colors">
+                            </div>
+                            <div class="p-4 hover:bg-white transition-colors text-center">
+                                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">PG Kompleks</label>
+                                <input type="number" id="jml-pgk" min="1" max="5" value="2" class="w-16 text-center font-bold text-lg px-2 py-1 bg-transparent border-b-2 border-slate-300 focus:border-blue-500 outline-none transition-colors">
+                            </div>
+                            <div class="p-4 hover:bg-white transition-colors text-center">
+                                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Benar / Salah</label>
+                                <input type="number" id="jml-bs" min="1" max="5" value="2" class="w-16 text-center font-bold text-lg px-2 py-1 bg-transparent border-b-2 border-slate-300 focus:border-blue-500 outline-none transition-colors">
+                            </div>
+                            <div class="p-4 hover:bg-white transition-colors text-center">
+                                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Menjodohkan</label>
+                                <input type="number" id="jml-mj" min="1" max="3" value="1" class="w-16 text-center font-bold text-lg px-2 py-1 bg-transparent border-b-2 border-slate-300 focus:border-blue-500 outline-none transition-colors">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                        <i class="fas fa-bolt text-yellow-500"></i> Aksi Generate (Bertahap)
+                    </h3>
+                    <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded font-medium">Lakukan berurutan</span>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    <button id="btn-gen-pg" class="btn-gen relative overflow-hidden group bg-white border-2 border-blue-600 hover:bg-blue-600 text-blue-700 hover:text-white font-semibold py-3 px-2 rounded-xl transition-all duration-300 flex flex-col justify-center items-center gap-1 shadow-sm focus:ring-4 focus:ring-blue-100">
+                        <i class="fas fa-list-ul text-lg mb-1 transition-transform group-hover:scale-110"></i>
+                        <span class="text-xs md:text-sm text-center leading-tight">1. Pilihan Ganda</span>
+                    </button>
+                    <button id="btn-gen-pgk" class="btn-gen relative overflow-hidden group bg-white border-2 border-blue-600 hover:bg-blue-600 text-blue-700 hover:text-white font-semibold py-3 px-2 rounded-xl transition-all duration-300 flex flex-col justify-center items-center gap-1 shadow-sm focus:ring-4 focus:ring-blue-100">
+                        <i class="fas fa-check-double text-lg mb-1 transition-transform group-hover:scale-110"></i>
+                        <span class="text-xs md:text-sm text-center leading-tight">2. PG Kompleks</span>
+                    </button>
+                    <button id="btn-gen-bs" class="btn-gen relative overflow-hidden group bg-white border-2 border-blue-600 hover:bg-blue-600 text-blue-700 hover:text-white font-semibold py-3 px-2 rounded-xl transition-all duration-300 flex flex-col justify-center items-center gap-1 shadow-sm focus:ring-4 focus:ring-blue-100">
+                        <i class="fas fa-balance-scale text-lg mb-1 transition-transform group-hover:scale-110"></i>
+                        <span class="text-xs md:text-sm text-center leading-tight">3. Benar / Salah</span>
+                    </button>
+                    <button id="btn-gen-mj" class="btn-gen relative overflow-hidden group bg-white border-2 border-blue-600 hover:bg-blue-600 text-blue-700 hover:text-white font-semibold py-3 px-2 rounded-xl transition-all duration-300 flex flex-col justify-center items-center gap-1 shadow-sm focus:ring-4 focus:ring-blue-100">
+                        <i class="fas fa-link text-lg mb-1 transition-transform group-hover:scale-110"></i>
+                        <span class="text-xs md:text-sm text-center leading-tight">4. Menjodohkan</span>
+                    </button>
+                    
+                    <button id="btn-gen-kisi" class="btn-gen relative overflow-hidden group bg-purple-50 border-2 border-purple-600 hover:bg-purple-600 text-purple-700 hover:text-white font-semibold py-3 px-2 rounded-xl transition-all duration-300 flex flex-col justify-center items-center gap-1 shadow-sm focus:ring-4 focus:ring-purple-100 col-span-2 md:col-span-1">
+                        <i class="fas fa-table text-lg mb-1 transition-transform group-hover:scale-110"></i>
+                        <span class="text-xs md:text-sm text-center leading-tight">5. Kisi-kisi Akhir</span>
+                    </button>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-3 mt-6 border-t border-slate-100 pt-6">
+                    <button id="btn-clear" class="flex-1 bg-red-50 hover:bg-red-100 text-red-600 font-bold py-3 px-6 rounded-xl transition-colors flex justify-center items-center gap-2 border border-red-200">
+                        <i class="fas fa-trash-alt"></i> Bersihkan Kertas
+                    </button>
+                    <button id="btn-export" class="flex-1 bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 px-6 rounded-xl transition-all flex justify-center items-center gap-2 shadow-md shadow-slate-300 focus:ring-4 focus:ring-slate-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none" disabled>
+                        <i class="fas fa-download"></i> Simpan ke Word (.doc)
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <div id="preview-header" class="hidden flex items-center justify-between mb-4 px-2">
+            <h2 class="text-lg font-bold text-slate-700 flex items-center gap-2">
+                <i class="fas fa-eye text-blue-500"></i> Pratinjau Dokumen
+            </h2>
+            <span class="text-xs font-medium text-slate-500 bg-slate-200 px-2 py-1 rounded">Format A4</span>
+        </div>
+
+        <div id="print-area" class="hidden relative group">
+            <div id="kop-surat" class="text-center border-b-4 border-double border-slate-800 pb-4 mb-8 hidden">
+                <h1 class="text-xl font-bold uppercase tracking-wide">INSTRUMEN ASESMEN KOMPETENSI MINIMUM (AKM)</h1>
+                <p class="text-sm font-medium mt-1" id="kop-detail">Mata Pelajaran: - | Kelas: -</p>
+            </div>
+            
+            <div id="content-body" class="max-w-none text-black selection:bg-blue-200 selection:text-black">
+                <!-- Hasil AI disisipkan di sini -->
+            </div>
+            
+            <div class="absolute inset-0 pointer-events-none flex items-center justify-center opacity-[0.02] overflow-hidden z-0">
+                <span class="text-9xl font-black transform -rotate-45 text-slate-900">DRAFT</span>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- KONFIGURASI SISTEM ---
+        const APP_PASSWORD = "GURUHEBAT";
+        const STORAGE_KEY_API = "gemini_api_key_soal_builder";
+        const STORAGE_KEY_ADMIN_EMAIL = "designer_admin_email";
+        const STORAGE_KEY_REQUESTS = "designer_access_requests";
+        const STORAGE_KEY_APPROVED = "designer_approved_emails";
+        
+        const DEFAULT_ADMIN_EMAIL = "ahmadfauzi.admin.akm@gmail.com";
+        const ADMIN_WA_NUMBER = "6282284424448"; // Format WA Internasional untuk Ahmad Fauzi
+        
+        // State Global Sementara untuk Permintaan yang Baru Dikirim
+        let latestRequestData = null;
+
+        // Element DOM Login & Tab Akses
+        const loginOverlay = document.getElementById('login-overlay');
+        const loginCard = document.getElementById('login-card');
+        const appPasswordInput = document.getElementById('app-password');
+        const btnLogin = document.getElementById('btn-login');
+        const loginError = document.getElementById('login-error');
+
+        const tabSandi = document.getElementById('tab-sandi');
+        const tabMinta = document.getElementById('tab-minta');
+        const tabCek = document.getElementById('tab-cek');
+
+        const formSandi = document.getElementById('form-sandi');
+        const formMinta = document.getElementById('form-minta');
+        const formCek = document.getElementById('form-cek');
+
+        // Element DOM Input Request
+        const reqNamaInput = document.getElementById('req-nama');
+        const reqEmailInput = document.getElementById('req-email');
+        const reqAlasanInput = document.getElementById('req-alasan');
+        const cekEmailInput = document.getElementById('cek-email');
+        const cekError = document.getElementById('cek-error');
+
+        // Modal Fallback Minta Izin
+        const requestModal = document.getElementById('request-modal');
+        const requestModalContent = document.getElementById('request-modal-content');
+        const copyRequestTextarea = document.getElementById('copy-request-text');
+
+        // Admin Badge & Panel
+        const adminBadge = document.getElementById('admin-badge');
+        const reqCountBadge = document.getElementById('req-count-badge');
+        const adminPanelModal = document.getElementById('admin-panel-modal');
+        const adminPanelContent = document.getElementById('admin-panel-content');
+        const adminReqList = document.getElementById('admin-req-list');
+
+        // Element DOM API & System Settings
+        const apiModal = document.getElementById('api-modal');
+        const apiModalContent = document.getElementById('api-modal-content');
+        const apiKeyInput = document.getElementById('api-key-input');
+        const adminEmailInput = document.getElementById('admin-email-input');
+        const apiStatusIcon = document.getElementById('api-status-icon');
+
+        // Element DOM Generator
+        const allGenBtns = document.querySelectorAll('.btn-gen');
+        const btnClear = document.getElementById('btn-clear');
+        const btnExport = document.getElementById('btn-export');
+        const btnExportHeader = document.getElementById('btn-export-header');
+        
+        // Element DOM UI & Preview
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const loadingText = document.getElementById('loading-text');
+        const printArea = document.getElementById('print-area');
+        const previewHeader = document.getElementById('preview-header');
+        const contentBody = document.getElementById('content-body');
+        const kopSurat = document.getElementById('kop-surat');
+        const kopDetail = document.getElementById('kop-detail');
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toast-message');
+        const toastIcon = document.getElementById('toast-icon');
+        const confirmModal = document.getElementById('confirm-modal');
+        const confirmModalContent = document.getElementById('confirm-modal-content');
+
+        // --- MANAJEMEN TAB LOGIN / AKSES ---
+        function switchLoginTab(tab) {
+            // Reset state kelas
+            [tabSandi, tabMinta, tabCek].forEach(t => {
+                t.classList.replace('border-blue-600', 'border-transparent');
+                t.classList.replace('font-bold', 'font-medium');
+                t.classList.replace('text-blue-600', 'text-slate-500');
+            });
+            [formSandi, formMinta, formCek].forEach(f => f.classList.add('hidden'));
+
+            // Aktifkan tab terpilih
+            if (tab === 'sandi') {
+                tabSandi.classList.replace('border-transparent', 'border-blue-600');
+                tabSandi.classList.replace('font-medium', 'font-bold');
+                tabSandi.classList.replace('text-slate-500', 'text-blue-600');
+                formSandi.classList.remove('hidden');
+            } else if (tab === 'minta') {
+                tabMinta.classList.replace('border-transparent', 'border-blue-600');
+                tabMinta.classList.replace('font-medium', 'font-bold');
+                tabMinta.classList.replace('text-slate-500', 'text-blue-600');
+                formMinta.classList.remove('hidden');
+            } else if (tab === 'cek') {
+                tabCek.classList.replace('border-transparent', 'border-blue-600');
+                tabCek.classList.replace('font-medium', 'font-bold');
+                tabCek.classList.replace('text-slate-500', 'text-blue-600');
+                formCek.classList.remove('hidden');
+            }
+        }
+
+        // --- SISTEM PERMINTAAN AKSES (GAYA GOOGLE DRIVE) ---
+        function getAccessRequests() {
+            return JSON.parse(localStorage.getItem(STORAGE_KEY_REQUESTS)) || [];
+        }
+
+        function getApprovedEmails() {
+            return JSON.parse(localStorage.getItem(STORAGE_KEY_APPROVED)) || [];
+        }
+
+        function getAdminEmail() {
+            return localStorage.getItem(STORAGE_KEY_ADMIN_EMAIL) || DEFAULT_ADMIN_EMAIL;
+        }
+
+        function submitAccessRequest() {
+            const nama = reqNamaInput.value.trim();
+            const email = reqEmailInput.value.trim().toLowerCase();
+            const alasan = reqAlasanInput.value.trim();
+
+            if (!nama || !email) {
+                showToast("Mohon lengkapi Nama Lengkap dan Email Anda.", true);
+                return;
+            }
+
+            const reqs = getAccessRequests();
+            // Cek apakah email ini sudah pernah kirim permintaan sebelumnya
+            const exists = reqs.find(r => r.email === email);
+            if (exists) {
+                showToast("Permintaan untuk email ini sudah dikirim sebelumnya.", true);
+                return;
+            }
+
+            // Simpan permintaan akses baru secara lokal di database simulasi browser
+            const newRequest = {
+                id: 'req_' + Date.now(),
+                nama: nama,
+                email: email,
+                alasan: alasan || "Tidak ada pesan khusus.",
+                tanggal: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+                status: 'pending' // pending, approved, rejected
+            };
+
+            reqs.push(newRequest);
+            localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify(reqs));
+
+            // Membuat Format Pesan Permintaan
+            const adminEmail = getAdminEmail();
+            const requestText = `Halo Admin (Ahmad Fauzi),
+
+Ada permintaan izin akses baru untuk menggunakan aplikasi AI Soal Builder Pro.
+
+Berikut adalah rincian data pemohon:
+- Nama Lengkap: ${nama}
+- Email Pemohon: ${email}
+- Alasan Akses: ${alasan || 'Tidak ada alasan khusus.'}
+- Tanggal Pengajuan: ${newRequest.tanggal}
+
+---
+💡 INSTRUKSI INSTAN UNTUK ADMIN:
+1. Buka aplikasi AI Soal Builder Pro menggunakan Link Bypass Admin Anda.
+2. Buka "Panel Persetujuan" di sudut kiri bawah layar Anda.
+3. Cari nama "${nama}" dengan email "${email}" kemudian klik tombol "Setujui".
+4. Pemohon dapat langsung masuk menggunakan menu "Cek Email".
+
+Terima kasih!`;
+
+            // Simpan data ke state global untuk tombol WhatsApp & Salin di modal
+            latestRequestData = {
+                nama: nama,
+                email: email,
+                alasan: alasan,
+                text: requestText
+            };
+
+            // Masukkan teks ke dalam textarea modal
+            copyRequestTextarea.value = requestText;
+
+            // Trigger Email (mailto) dengan jangkar khusus agar tidak diblokir iframe sandbox
+            const subject = encodeURIComponent(`[AI Soal Builder Pro] Permintaan Izin Akses Aplikasi - ${nama}`);
+            const body = encodeURIComponent(requestText);
+            const mailtoUrl = `mailto:${adminEmail}?subject=${subject}&body=${body}`;
+
+            const link = document.createElement('a');
+            link.href = mailtoUrl;
+            link.target = '_blank';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // Reset input form
+            reqNamaInput.value = '';
+            reqEmailInput.value = '';
+            reqAlasanInput.value = '';
+
+            // Tampilkan Modal Petunjuk Fallback
+            openRequestModal();
+        }
+
+        // Fungsi Membuka Modal Panduan Fallback Pengiriman Izin
+        function openRequestModal() {
+            requestModal.classList.remove('hidden');
+            setTimeout(() => {
+                requestModal.classList.remove('opacity-0');
+                requestModalContent.classList.remove('scale-95', 'opacity-0');
+                requestModalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeRequestModal() {
+            requestModal.classList.add('opacity-0');
+            requestModalContent.classList.remove('scale-100', 'opacity-100');
+            requestModalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => { 
+                requestModal.classList.add('hidden');
+                switchLoginTab('cek'); // Alihkan ke tab Cek Email
+            }, 300);
+        }
+
+        // Fungsi Salin Teks Permintaan Secara Manual (Kompatibel Iframe/Sandbox)
+        function copyRequestText() {
+            copyRequestTextarea.select();
+            copyRequestTextarea.setSelectionRange(0, 99999); // Untuk perangkat seluler
+            try {
+                document.execCommand('copy');
+                showToast("Teks pengajuan berhasil disalin ke clipboard!", false);
+            } catch (err) {
+                showToast("Gagal menyalin otomatis. Silakan salin teks secara manual.", true);
+            }
+        }
+
+        // Fungsi Kirim Pesan Akses via WhatsApp Api ke Admin Ahmad Fauzi
+        function sendRequestViaWA() {
+            if (!latestRequestData) return;
+            const textMessage = `Halo Admin (Ahmad Fauzi),\n\nSaya ingin meminta izin akses menggunakan aplikasi *AI Soal Builder Pro*.\n\nRincian Data Saya:\n- *Nama:* ${latestRequestData.nama}\n- *Email:* ${latestRequestData.email}\n- *Alasan:* ${latestRequestData.alasan || 'Tidak ada alasan khusus.'}\n\nMohon persetujuannya di Panel Admin Anda. Terima kasih!`;
+            const waUrl = `https://api.whatsapp.com/send?phone=${ADMIN_WA_NUMBER}&text=${encodeURIComponent(textMessage)}`;
+            window.open(waUrl, '_blank');
+        }
+
+        // Memeriksa apakah Email telah di-approve oleh admin
+        function checkEmailPermission() {
+            const email = cekEmailInput.value.trim().toLowerCase();
+            if (!email) {
+                showToast("Masukkan email Anda terlebih dahulu.", true);
+                return;
+            }
+
+            const approvedEmails = getApprovedEmails();
+            const reqs = getAccessRequests();
+
+            if (approvedEmails.includes(email)) {
+                // Email di-approve, buka kunci!
+                cekError.classList.add('hidden');
+                loginOverlay.classList.add('opacity-0');
+                setTimeout(() => {
+                    loginOverlay.classList.add('hidden');
+                    cekEmailInput.value = '';
+                }, 500);
+
+                setTimeout(() => {
+                    checkApiKeyStatus();
+                    showToast(`Akses disetujui! Selamat datang di AI Soal Builder Pro.`, false);
+                }, 600);
+            } else {
+                // Cari tahu apakah statusnya ditolak atau masih pending
+                const req = reqs.find(r => r.email === email);
+                if (req) {
+                    if (req.status === 'pending') {
+                        showToast("Akses Anda masih menunggu persetujuan Admin via WhatsApp/Email.", true);
+                    } else if (req.status === 'rejected') {
+                        showToast("Akses Anda ditolak oleh Admin. Silakan hubungi Ahmad Fauzi.", true);
+                    }
+                } else {
+                    cekError.classList.remove('hidden');
+                    showToast("Email belum terdaftar. Silakan minta izin di tab sebelah kiri.", true);
+                }
+            }
+        }
+
+        // --- SISTEM PORTAL ADMIN (UNTUK AHMAD FAUZI) ---
+        function renderAdminRequests() {
+            const reqs = getAccessRequests();
+            const approved = getApprovedEmails();
+            
+            // Perbarui counter notifikasi pending
+            const pendingCount = reqs.filter(r => r.status === 'pending').length;
+            if (pendingCount > 0) {
+                reqCountBadge.textContent = pendingCount;
+                reqCountBadge.classList.remove('hidden');
+            } else {
+                reqCountBadge.classList.add('hidden');
+            }
+
+            adminReqList.innerHTML = '';
+
+            if (reqs.length === 0) {
+                adminReqList.innerHTML = '<p class="text-slate-400 text-center py-8 text-sm">Belum ada riwayat permintaan akses masuk.</p>';
+                return;
+            }
+
+            // Render daftar permintaan
+            reqs.reverse().forEach(req => {
+                const reqCard = document.createElement('div');
+                reqCard.className = `p-4 rounded-xl border transition-all ${req.status === 'approved' ? 'bg-emerald-50/50 border-emerald-200' : req.status === 'rejected' ? 'bg-red-50/50 border-red-100' : 'bg-slate-50 border-slate-200'}`;
+                
+                let badgeMarkup = '';
+                let actionButtons = '';
+
+                if (req.status === 'pending') {
+                    badgeMarkup = `<span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full"><i class="fas fa-clock"></i> Menunggu</span>`;
+                    actionButtons = `
+                        <div class="flex gap-2 mt-3">
+                            <button onclick="adminAction('${req.id}', 'approve')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-3 rounded-lg text-xs transition-colors"><i class="fas fa-check"></i> Setujui</button>
+                            <button onclick="adminAction('${req.id}', 'reject')" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-1.5 px-3 rounded-lg text-xs transition-colors"><i class="fas fa-times"></i> Tolak</button>
+                        </div>
+                    `;
+                } else if (req.status === 'approved') {
+                    badgeMarkup = `<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full"><i class="fas fa-check-circle"></i> Disetujui</span>`;
+                } else {
+                    badgeMarkup = `<span class="bg-red-100 text-red-800 text-[10px] font-bold px-2 py-0.5 rounded-full"><i class="fas fa-times-circle"></i> Ditolak</span>`;
+                }
+
+                reqCard.innerHTML = `
+                    <div class="flex justify-between items-start gap-2">
+                        <div>
+                            <h4 class="font-bold text-sm text-slate-800 flex items-center gap-1.5">
+                                ${req.nama} 
+                                ${badgeMarkup}
+                            </h4>
+                            <p class="text-xs text-blue-600 font-semibold">${req.email}</p>
+                            <p class="text-xs text-slate-400 mt-0.5">${req.tanggal}</p>
+                            <div class="mt-2 bg-white/80 p-2 rounded-lg border border-slate-100 text-xs text-slate-600 leading-relaxed">
+                                <span class="font-semibold text-slate-700">Alasan:</span> ${req.alasan}
+                            </div>
+                        </div>
+                    </div>
+                    ${actionButtons}
+                `;
+                adminReqList.appendChild(reqCard);
+            });
+        }
+
+        function adminAction(reqId, action) {
+            let reqs = getAccessRequests();
+            let approved = getApprovedEmails();
+            const index = reqs.findIndex(r => r.id === reqId);
+
+            if (index !== -1) {
+                if (action === 'approve') {
+                    reqs[index].status = 'approved';
+                    if (!approved.includes(reqs[index].email)) {
+                        approved.push(reqs[index].email);
+                    }
+                    showToast(`Akses untuk ${reqs[index].nama} berhasil disetujui!`, false);
+                } else if (action === 'reject') {
+                    reqs[index].status = 'rejected';
+                    // Hapus jika sebelumnya disetujui
+                    approved = approved.filter(e => e !== reqs[index].email);
+                    showToast(`Permintaan akses ${reqs[index].nama} ditolak.`, true);
+                }
+
+                localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify(reqs));
+                localStorage.setItem(STORAGE_KEY_APPROVED, JSON.stringify(approved));
+                renderAdminRequests();
+            }
+        }
+
+        function clearAllRequests() {
+            if (confirm("Apakah Anda yakin ingin menghapus semua daftar riwayat permintaan masuk?")) {
+                localStorage.removeItem(STORAGE_KEY_REQUESTS);
+                localStorage.removeItem(STORAGE_KEY_APPROVED);
+                renderAdminRequests();
+                showToast("Semua riwayat pengajuan dibersihkan.", false);
+            }
+        }
+
+        function openAdminPanel() {
+            renderAdminRequests();
+            adminPanelModal.classList.remove('hidden');
+            setTimeout(() => {
+                adminPanelModal.classList.remove('opacity-0');
+                adminPanelContent.classList.remove('scale-95', 'opacity-0');
+                adminPanelContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeAdminPanel() {
+            adminPanelModal.classList.add('opacity-0');
+            adminPanelContent.classList.remove('scale-100', 'opacity-100');
+            adminPanelContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => { adminPanelModal.classList.add('hidden'); }, 300);
+        }
+
+        // --- SISTEM AWAL (BYPASS KUNCI / DETEKSI ROLE) ---
+        function checkPassword() {
+            if (appPasswordInput.value === APP_PASSWORD) {
+                loginOverlay.classList.add('opacity-0');
+                setTimeout(() => {
+                    loginOverlay.classList.add('hidden');
+                    appPasswordInput.value = '';
+                }, 500);
+                
+                setTimeout(() => {
+                    checkApiKeyStatus();
+                    showToast("Selamat datang di AI Soal Builder Pro!", false);
+                }, 600);
+            } else {
+                loginError.classList.remove('hidden');
+                appPasswordInput.classList.add('border-red-500', 'focus:ring-red-500', 'bg-red-50');
+                loginCard.style.animation = 'shake 0.4s ease-in-out';
+                setTimeout(() => { loginCard.style.animation = ''; }, 400);
+            }
+        }
+
+        btnLogin.addEventListener('click', checkPassword);
+        appPasswordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') checkPassword(); });
+        appPasswordInput.addEventListener('input', () => {
+            loginError.classList.add('hidden');
+            appPasswordInput.classList.remove('border-red-500', 'focus:ring-red-500', 'bg-red-50');
+        });
+
+        // Deteksi Bypass Pendesain pada URL
+        function initApp() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const isDesigner = urlParams.get('role') === 'designer' || urlParams.get('access') === 'fauzi_admin';
+            const autoRequestTab = urlParams.get('request') === 'true';
+            
+            if (isDesigner) {
+                // Tampilkan admin badge melayang di sudut kiri bawah
+                adminBadge.classList.remove('hidden');
+                renderAdminRequests(); // update status angka merah
+
+                // Bypass Kunci halaman
+                loginOverlay.classList.add('opacity-0');
+                setTimeout(() => {
+                    loginOverlay.classList.add('hidden');
+                    appPasswordInput.value = '';
+                }, 500);
+                
+                setTimeout(() => {
+                    checkApiKeyStatus();
+                    showToast("Bypass Aktif! Selamat bekerja Ahmad Fauzi (Admin)", false);
+                }, 600);
+            } else if (autoRequestTab) {
+                // Otomatis buka tab permintaan jika parameter ?request=true ada
+                switchLoginTab('minta');
+            }
+        }
+
+        function checkApiKeyStatus() {
+            const key = localStorage.getItem(STORAGE_KEY_API);
+            if (key && key.length > 20) {
+                apiStatusIcon.className = "fas fa-check-circle text-green-500";
+            } else {
+                apiStatusIcon.className = "fas fa-exclamation-circle text-red-500";
+                setTimeout(() => {
+                    showToast("Harap atur Gemini API Key Anda melalui tombol 'Pengaturan' di sudut kanan atas.", true);
+                }, 1500);
+            }
+        }
+
+        function getApiKey() {
+            return localStorage.getItem(STORAGE_KEY_API) || "";
+        }
+
+        function openApiModal() {
+            apiKeyInput.value = getApiKey();
+            adminEmailInput.value = getAdminEmail();
+            apiModal.classList.remove('hidden');
+            setTimeout(() => {
+                apiModal.classList.remove('opacity-0');
+                apiModalContent.classList.remove('scale-95', 'opacity-0');
+                apiModalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeApiModal() {
+            apiModal.classList.add('opacity-0');
+            apiModalContent.classList.remove('scale-100', 'opacity-100');
+            apiModalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => { apiModal.classList.add('hidden'); }, 300);
+        }
+
+        function saveSettings() {
+            const key = apiKeyInput.value.trim();
+            const email = adminEmailInput.value.trim().toLowerCase();
+            
+            if (key) {
+                localStorage.setItem(STORAGE_KEY_API, key);
+            } else {
+                localStorage.removeItem(STORAGE_KEY_API);
+            }
+
+            if (email) {
+                localStorage.setItem(STORAGE_KEY_ADMIN_EMAIL, email);
+            } else {
+                localStorage.setItem(STORAGE_KEY_ADMIN_EMAIL, DEFAULT_ADMIN_EMAIL);
+            }
+
+            checkApiKeyStatus();
+            closeApiModal();
+            showToast("Pengaturan sistem berhasil disimpan!", false);
+        }
+
+        function togglePasswordVisibility(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.replace("fa-eye", "fa-eye-slash");
+            } else {
+                input.type = "password";
+                icon.classList.replace("fa-eye-slash", "fa-eye");
+            }
+        }
+
+        function showToast(message, isError = true) {
+            toastMessage.textContent = message;
+            toast.className = 'fixed bottom-6 right-6 z-[110] text-white px-5 py-4 rounded-xl shadow-2xl transform transition-all duration-300 flex items-center gap-3 max-w-md w-full sm:w-auto';
+            toastIcon.className = 'flex-shrink-0 text-xl';
+            
+            if(isError) {
+                toast.classList.add('bg-red-600');
+                toastIcon.innerHTML = `<i class="fas fa-exclamation-circle"></i>`;
+            } else {
+                toast.classList.add('bg-emerald-600');
+                toastIcon.innerHTML = `<i class="fas fa-check-circle"></i>`;
+            }
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('hidden');
+                setTimeout(() => {
+                    toast.classList.remove('translate-y-full', 'opacity-0');
+                    toast.classList.add('translate-y-0', 'opacity-100');
+                }, 10);
+            });
+
+            if(window.toastTimeout) clearTimeout(window.toastTimeout);
+            window.toastTimeout = setTimeout(() => { closeToast(); }, 5000);
+        }
+
+        // Fungsi menutup Toast
+        function closeToast() {
+            toast.classList.remove('translate-y-0', 'opacity-100');
+            toast.classList.add('translate-y-full', 'opacity-0');
+            setTimeout(() => toast.classList.add('hidden'), 300);
+        }
+
+        function updateFileName(input) {
+            const fileNameSpan = document.getElementById('file-name');
+            if (input.files && input.files.length > 0) {
+                const file = input.files[0];
+                if(file.size > 5 * 1024 * 1024) { 
+                    showToast("Ukuran file terlalu besar. Maksimal 5MB.", true);
+                    input.value = '';
+                    fileNameSpan.textContent = 'Unggah file referensi materi (Maks. 5MB)';
+                    return;
+                }
+                fileNameSpan.textContent = file.name;
+                fileNameSpan.classList.replace('text-slate-500', 'text-slate-800');
+                fileNameSpan.classList.add('font-semibold');
+            } else {
+                fileNameSpan.textContent = 'Unggah file referensi materi (Maks. 5MB)';
+                fileNameSpan.classList.replace('text-slate-800', 'text-slate-500');
+                fileNameSpan.classList.remove('font-semibold');
+            }
+        }
+
+        function getBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        function cleanMarkdownWrapper(text) {
+            let cleaned = text.trim();
+            if (cleaned.startsWith('```html')) cleaned = cleaned.substring(7);
+            else if (cleaned.startsWith('```')) cleaned = cleaned.substring(3);
+            if (cleaned.endsWith('```')) cleaned = cleaned.substring(0, cleaned.length - 3);
+            return cleaned.trim();
+        }
+
+        async function fetchWithExponentialBackoff(url, options, retries = 2) {
+            const delays = [1000, 3000]; 
+            for (let i = 0; i <= retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) {
+                        const errData = await response.json().catch(() => ({}));
+                        throw new Error(errData.error?.message || `HTTP ${response.status}`);
+                    }
+                    return await response.json();
+                } catch (error) {
+                    if (i === retries) throw error; 
+                    await new Promise(resolve => setTimeout(resolve, delays[i]));
+                }
+            }
+        }
+
+        async function handleGenerate(tipeGen) {
+            const currentApiKey = getApiKey();
+            if (!currentApiKey) {
+                showToast("API Key belum dikonfigurasi. Silakan klik tombol 'Pengaturan' di header.", true);
+                openApiModal();
+                return;
+            }
+
+            const mataPelajaran = document.getElementById('mata-pelajaran').value.trim();
+            const topikUtama = document.getElementById('topik-utama').value.trim();
+            const subMateri = document.getElementById('sub-materi').value.trim();
+            const tingkatKesulitan = document.getElementById('tingkat-kesulitan').value;
+            const faseKelas = document.getElementById('fase-kelas').value;
+            const jmlPg = parseInt(document.getElementById('jml-pg').value) || 0;
+            const jmlPgk = parseInt(document.getElementById('jml-pgk').value) || 0;
+            const jmlBs = parseInt(document.getElementById('jml-bs').value) || 0;
+            const jmlMj = parseInt(document.getElementById('jml-mj').value) || 0;
+            const jmlGambar = parseInt(document.getElementById('jml-gambar').value) || 0;
+
+            if (tipeGen !== 'KISI' && (!topikUtama || !subMateri || !mataPelajaran)) {
+                showToast("Mohon lengkapi Mata Pelajaran, Topik Utama, dan Sub Materi.", true);
+                return;
+            }
+
+            const isFaseD = faseKelas.includes('D');
+            const jumlahPilihan = isFaseD ? 4 : 5;
+            const abjadPilihan = isFaseD ? 'A, B, C, D' : 'A, B, C, D, E';
+
+            let specificInstruction = "";
+            let sectionTitle = "";
+            let loadingMsg = "";
+
+            // Pengaturan Instruksi Spesifik berdasarkan tipe
+            switch(tipeGen) {
+                case 'PG':
+                    if(jmlPg <= 0) { showToast("Jumlah Soal harus > 0"); return; }
+                    specificInstruction = `BUAT TEPAT ${jmlPg} SOAL Pilihan Ganda (1 jawaban benar). Beri penomoran "Soal 1" hingga "Soal ${jmlPg}".\nSetiap soal WAJIB memiliki TEPAT ${jumlahPilihan} opsi (${abjadPilihan}).\nSertakan Kunci Jawaban dan Pembahasan penalaran.`;
+                    sectionTitle = "A. Pilihan Ganda";
+                    loadingMsg = `Menyusun ${jmlPg} Soal Pilihan Ganda...`;
+                    break;
+                case 'PGK':
+                    if(jmlPgk <= 0) { showToast("Jumlah Soal harus > 0"); return; }
+                    specificInstruction = `BUAT TEPAT ${jmlPgk} SOAL Pilihan Ganda Kompleks (Lebih dari 1 jawaban benar menggunakan checkbox kotak). Beri penomoran "Soal 1" hingga "Soal ${jmlPgk}".\nSetiap soal WAJIB memiliki TEPAT ${jumlahPilihan} opsi/pernyataan.\nSertakan Kunci Jawaban dan Pembahasan.`;
+                    sectionTitle = "B. Pilihan Ganda Kompleks";
+                    loadingMsg = `Menyusun ${jmlPgk} Soal PG Kompleks...`;
+                    break;
+                case 'BS':
+                    if(jmlBs <= 0) { showToast("Jumlah Soal harus > 0"); return; }
+                    specificInstruction = `BUAT TEPAT ${jmlBs} SOAL Benar / Salah. Beri penomoran "Soal 1" hingga "Soal ${jmlBs}".\nSetiap soal WAJIB menyajikan Tabel dengan 2-3 baris pernyataan berserta kolom Benar dan Salah.\nSertakan Kunci Jawaban dan Pembahasan.`;
+                    sectionTitle = "C. Benar / Salah";
+                    loadingMsg = `Menyusun ${jmlBs} Soal Benar/Salah...`;
+                    break;
+                case 'MJ':
+                    if(jmlMj <= 0) { showToast("Jumlah Soal harus > 0"); return; }
+                    specificInstruction = `BUAT TEPAT ${jmlMj} SOAL Menjodohkan. Beri penomoran "Soal 1" hingga "Soal ${jmlMj}".\nSajikan dalam bentuk tabel 2 kolom (Pernyataan di kiri, Jawaban Acak di kanan).\nSertakan Kunci Jawaban dan Pembahasan.`;
+                    sectionTitle = "D. Menjodohkan";
+                    loadingMsg = `Menyusun ${jmlMj} Soal Menjodohkan...`;
+                    break;
+                case 'KISI':
+                    const existingSoal = contentBody.innerText.trim();
+                    if (!existingSoal || existingSoal.length < 100) {
+                        showToast("Generate minimal satu jenis soal terlebih dahulu untuk membuat kisi-kisi.", true);
+                        return;
+                    }
+                    specificInstruction = `BERDASARKAN SOAL-SOAL DI BAWAH INI, JANA HANYA TABEL KISI-KISI. DILARANG membuat soal baru.\nFormat Tabel Kolom: No | Tujuan Pembelajaran (Estimasi) | Materi | Indikator Soal | Level Kognitif | Bentuk Soal\n\n--- TEKS SOAL ---\n${existingSoal}\n--- AKHIR TEKS SOAL ---`;
+                    sectionTitle = "Lampiran: Kisi-Kisi Asesmen";
+                    loadingMsg = "Menganalisis draf untuk menyusun Kisi-kisi...";
+                    break;
+            }
+
+            // Memproses Lampiran PDF (jika ada)
+            const fileInput = document.getElementById('file-referensi');
+            let filePart = null;
+            if (fileInput && fileInput.files.length > 0 && tipeGen !== 'KISI') {
+                try {
+                    const base64Data = await getBase64(fileInput.files[0]);
+                    filePart = { inlineData: { data: base64Data, mimeType: fileInput.files[0].type || 'application/pdf' } };
+                    specificInstruction += `\n\nREFERENSI UTAMA: Jadikan dokumen lampiran sebagai sumber informasi utama pembuatan soal agar sesuai kurikulum.`;
+                } catch (error) {
+                    showToast("Gagal memproses file PDF.", true);
+                    return;
+                }
+            }
+
+            // Instruksi Tambahan (Gambar & Karakteristik)
+            if (tipeGen !== 'KISI' && jmlGambar > 0) {
+                specificInstruction += `\n\nSTIMULUS VISUAL: Sisipkan ${jmlGambar} representasi gambar/tabel menggunakan format: <div style="border:2px dashed #94a3b8; padding:2rem; text-align:center; background:#f1f5f9; margin:1rem 0; color:#475569;">[GAMBAR/GRAFIK: Deskripsikan visual yang dibutuhkan disini]</div>.`;
+            }
+            if (tipeGen !== 'KISI') {
+                specificInstruction += `\n\nKARAKTERISTIK AKM: Stimulus (Teks/Data) WAJIB mengukur kemampuan Literasi Membaca atau Numerasi. Fokus pada pemecahan masalah kontekstual, bukan sekadar hafalan.`;
+            }
+
+            loadingText.innerHTML = `<i class="fas fa-magic mr-2 text-blue-300"></i> ${loadingMsg}`;
+            loadingOverlay.classList.remove('hidden');
+            setTimeout(() => loadingOverlay.classList.remove('opacity-0'), 10);
+            
+            allGenBtns.forEach(btn => { btn.disabled = true; btn.classList.add('opacity-50', 'cursor-not-allowed'); });
+            btnExport.disabled = true;
+            btnExportHeader.disabled = true;
+
+            const systemPrompt = `Anda adalah Ahli Evaluasi Pendidikan Kurikulum Merdeka. OUTPUT HANYA HTML MURNI (Gunakan tag semantik: h2, h3, p, ul, ol, table). JANGAN gunakan tag html, head, body.
+ATURAN FORMAT:
+- Pisahkan antar soal dengan <hr style="border:0; border-bottom:2px dashed #cbd5e1; margin:30px 0;">.
+- Tabel gunakan: border="1" style="border-collapse:collapse; width:100%; border:1px solid #cbd5e1;" dan sel berikan padding 8px.
+- Kunci jawaban letakkan di bawah setiap soal menggunakan tag <em> atau blok dengan warna latar abu-abu muda.
+- DILARANG memotong output di tengah jalan, pastikan semua tag tertutup rapi.`;
+
+            const userPrompt = `KONTEKS ASESMEN:\n- Mapel: ${mataPelajaran}\n- Kelas: ${faseKelas}\n- Topik: ${topikUtama}\n- Context: ${subMateri}\n- Level Kognitif: ${tingkatKesulitan}\n\nTUGAS UTAMA:\n${specificInstruction}`;
+
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${currentApiKey}`;
+            
+            const partsArray = [{ text: userPrompt }];
+            if (filePart) partsArray.push(filePart);
+
+            const payload = {
+                contents: [{ parts: partsArray }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                generationConfig: { temperature: 0.7, maxOutputTokens: 8192 }
+            };
+
+            try {
+                const result = await fetchWithExponentialBackoff(apiUrl, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+                });
+
+                if(result.error) { throw new Error(result.error.message); }
+
+                const candidate = result.candidates?.[0];
+                if (candidate && candidate.content?.parts?.[0]?.text) {
+                    const rawHtml = candidate.content.parts[0].text;
+                    const cleanHtml = cleanMarkdownWrapper(rawHtml);
+                    
+                    // Update Header Preview
+                    kopDetail.textContent = `Mata Pelajaran: ${mataPelajaran} | Kelas/Fase: ${faseKelas}`;
+                    kopSurat.classList.remove('hidden');
+                    
+                    // Sisipkan Konten
+                    const sectionWrapper = document.createElement('div');
+                    sectionWrapper.className = 'mb-12 relative z-10 bg-white'; 
+                    sectionWrapper.innerHTML = `
+                        <h2 class="text-2xl font-bold text-slate-800 border-b-2 border-slate-800 pb-2 mb-6 mt-8 uppercase tracking-wide flex items-center gap-2">
+                            ${sectionTitle}
+                        </h2>
+                        <div class="soal-content">${cleanHtml}</div>
+                    `;
+                    contentBody.appendChild(sectionWrapper);
+                    
+                    // Tampilkan Area
+                    printArea.classList.remove('hidden');
+                    previewHeader.classList.remove('hidden');
+                    
+                    showToast(`Berhasil menjana ${sectionTitle}`, false);
+                    setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 300);
+                } else {
+                    throw new Error("Format respons tidak valid dari AI.");
+                }
+            } catch (error) {
+                console.error("API Error:", error);
+                if(error.message.includes("API key not valid") || error.message.includes("API_KEY_INVALID")) {
+                    showToast("API Key tidak valid. Silakan periksa pengaturan API Anda.", true);
+                    openApiModal();
+                } else {
+                    showToast("Gagal memproses: " + error.message, true);
+                }
+            } finally {
+                loadingOverlay.classList.add('opacity-0');
+                setTimeout(() => {
+                    loadingOverlay.classList.add('hidden');
+                    allGenBtns.forEach(btn => { btn.disabled = false; btn.classList.remove('opacity-50', 'cursor-not-allowed'); });
+                    
+                    if(contentBody.innerHTML.trim() !== '') {
+                        btnExport.disabled = false;
+                        btnExportHeader.disabled = false;
+                        btnExportHeader.classList.remove('opacity-50', 'cursor-not-allowed');
+                    }
+                }, 300);
+            }
+        }
+
+        document.getElementById('btn-gen-pg').addEventListener('click', () => handleGenerate('PG'));
+        document.getElementById('btn-gen-pgk').addEventListener('click', () => handleGenerate('PGK'));
+        document.getElementById('btn-gen-bs').addEventListener('click', () => handleGenerate('BS'));
+        document.getElementById('btn-gen-mj').addEventListener('click', () => handleGenerate('MJ'));
+        document.getElementById('btn-gen-kisi').addEventListener('click', () => handleGenerate('KISI'));
+
+        btnClear.addEventListener('click', () => {
+            if(contentBody.innerHTML.trim() !== '') {
+                confirmModal.classList.remove('hidden');
+                setTimeout(() => {
+                    confirmModal.classList.remove('opacity-0');
+                    confirmModalContent.classList.remove('scale-95', 'opacity-0');
+                    confirmModalContent.classList.add('scale-100', 'opacity-100');
+                }, 10);
+            } else {
+                showToast("Area pratinjau sudah kosong.", false);
+            }
+        });
+
+        document.getElementById('btn-cancel-clear').addEventListener('click', () => {
+            confirmModal.classList.add('opacity-0');
+            confirmModalContent.classList.remove('scale-100', 'opacity-100');
+            confirmModalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => confirmModal.classList.add('hidden'), 300);
+        });
+
+        document.getElementById('btn-confirm-clear').addEventListener('click', () => {
+            contentBody.innerHTML = '';
+            printArea.classList.add('hidden');
+            previewHeader.classList.add('hidden');
+            kopSurat.classList.add('hidden');
+            btnExport.disabled = true;
+            btnExportHeader.disabled = true;
+            btnExportHeader.classList.add('opacity-50', 'cursor-not-allowed');
+            
+            document.getElementById('btn-cancel-clear').click(); // Tutup modal
+            showToast("Draft soal berhasil dibersihkan.", false);
+        });
+
+        function exportToWord() {
+            if (!contentBody.innerHTML.trim()) return;
+            const mapel = document.getElementById('mata-pelajaran').value || 'Mata Pelajaran';
+            const kelas = document.getElementById('fase-kelas').value || 'Kelas';
+            const topik = document.getElementById('topik-utama').value || 'Topik Asesmen';
+
+            const clone = contentBody.cloneNode(true);
+            const tables = clone.querySelectorAll('table');
+            
+            tables.forEach(table => {
+                table.setAttribute('border', '1');
+                table.style.cssText = 'border-collapse: collapse; width: 100%; border: 1px solid #000; margin-bottom: 20px; font-family: "Times New Roman", Times, serif; font-size: 11pt;';
+                table.querySelectorAll('th, td').forEach(cell => {
+                    cell.style.cssText = 'padding: 5px 8px; border: 1px solid #000; vertical-align: top; text-align: left;';
+                });
+                table.querySelectorAll('th').forEach(th => {
+                    th.style.backgroundColor = '#e2e8f0';
+                    th.style.fontWeight = 'bold';
+                    th.style.textAlign = 'center';
+                });
+            });
+
+            clone.querySelectorAll('hr').forEach(hr => {
+                hr.style.cssText = 'border: 0; border-bottom: 1px dashed #000; margin: 20pt 0; width: 100%;';
+            });
+
+            const htmlContent = `
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='[http://www.w3.org/TR/REC-html40](http://www.w3.org/TR/REC-html40)'>
+<head>
+    <meta charset="utf-8">
+    <title>Instrumen AKM</title>
+    <!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->
+    <style>
+        @page WordSection1 { size: 210mm 297mm; margin: 2cm 2cm 2cm 2cm; mso-page-orientation: portrait; }
+        div.WordSection1 { page: WordSection1; }
+        body { font-family: 'Times New Roman', serif; font-size: 11pt; line-height: 1.5; color: #000; }
+        table { border-collapse: collapse; width: 100%; }
+        h1 { font-family: 'Arial', sans-serif; font-size: 14pt; text-align: center; font-weight: bold; margin-bottom: 10pt;}
+        h2 { font-family: 'Arial', sans-serif; font-size: 12pt; font-weight: bold; border-bottom: 1px solid #000; padding-bottom: 5pt; margin-top:20pt;}
+        p { margin-bottom: 10pt; text-align: justify; }
+        .kop-surat { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="WordSection1">
+        <div class="kop-surat">
+            <h1>INSTRUMEN ASESMEN KOMPETENSI MINIMUM (AKM)</h1>
+            <p><strong>Mata Pelajaran:</strong> ${mapel} &nbsp;&nbsp;|&nbsp;&nbsp; <strong>Fase/Kelas:</strong> ${kelas}<br>
+            <strong>Topik:</strong> ${topik}</p>
+        </div>
+        ${clone.innerHTML}
+    </div>
+</body>
+</html>`;
+
+            const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword' });
+            saveAs(blob, `Soal_AKM_${topik.replace(/[^a-zA-Z0-9]/g, '_')}.doc`);
+            showToast("Dokumen berhasil diekspor ke format Word!", false);
+        }
+
+        btnExport.addEventListener('click', exportToWord);
+        btnExportHeader.addEventListener('click', exportToWord);
+
+        // Menjalankan inisialisasi bypass ketika halaman selesai dimuat
+        window.addEventListener('DOMContentLoaded', initApp);
+
+    </script>
+</body>
+</html>
